@@ -3,44 +3,49 @@
 using namespace std;
 
 class Account {
-private:
+public:
     int accNo;
     string name;
     float balance;
+    static const int MIN_BALANCE = 500;
 
-public:
-    void createAccount(int no, string n, float initialDeposit) {
+    void create(int no, string n, float initialDeposit) {
         accNo = no;
         name = n;
         balance = initialDeposit;
     }
 
-    void deposit(float amount) {
-        balance = balance + amount;
+    bool deposit(float amount) {
+        if (amount <= 0) return false;
+        balance += amount;
+        return true;
     }
 
     bool withdraw(float amount) {
-        if (amount > balance) {
-            return false;   // insufficient balance
-        }
-        balance = balance - amount;
+        if (amount <= 0 || (balance - amount) < MIN_BALANCE) return false;
+        balance -= amount;
         return true;
     }
 
     void display() {
         cout << "Account No : " << accNo << endl;
         cout << "Name       : " << name << endl;
-        cout << "Balance    : " << balance << endl;
-    }
-
-    int getAccNo() {
-        return accNo;
+        cout << "Balance    : " << (long)(balance * 100 + 0.5) / 100.0 << endl;
     }
 };
 
+Account acc[100];
+int count = 0;
+
+// returns index of account, or -1 if not found
+int findAccount(int no) {
+    for (int i = 0; i < count; i++) {
+        if (acc[i].accNo == no) return i;
+    }
+    return -1;
+}
+
 int main() {
-    Account acc[100];
-    int count = 0;
     int choice, no;
     string name;
     float amount;
@@ -55,62 +60,76 @@ int main() {
         cout << "Enter your choice: ";
         cin >> choice;
 
-        switch (choice) {
-        case 1:
+        if (choice == 1) {
             cout << "Enter Account Number: ";
             cin >> no;
+
+            if (findAccount(no) != -1) {
+                cout << "Account Number already exists!\n";
+                continue;
+            }
+
             cout << "Enter Name: ";
             cin >> name;
-            cout << "Enter Initial Deposit: ";
+
+            bool validName = true;
+            for (int i = 0; i < name.length(); i++) {
+                if (!((name[i] >= 'a' && name[i] <= 'z') || (name[i] >= 'A' && name[i] <= 'Z'))) {
+                    validName = false;
+                    break;
+                }
+            }
+            if (!validName) {
+                cout << "Name should only contain letters!\n";
+                continue;
+            }
+
+            cout << "Enter Initial Deposit (minimum 500): ";
             cin >> amount;
-            acc[count].createAccount(no, name, amount);
+
+            if (amount < 500) {
+                cout << "Initial deposit must be at least 500. Account not created.\n";
+                continue;
+            }
+
+            acc[count].create(no, name, amount);
             count++;
             cout << "Account Created Successfully!\n";
-            break;
-
-        case 2:
+        }
+        else if (choice == 2 || choice == 3) {
             cout << "Enter Account Number: ";
             cin >> no;
-            for (int i = 0; i < count; i++) {
-                if (acc[i].getAccNo() == no) {
-                    cout << "Enter Amount to Deposit: ";
-                    cin >> amount;
-                    acc[i].deposit(amount);
-                    cout << "Amount Deposited Successfully!\n";
-                }
-            }
-            break;
+            int idx = findAccount(no);
 
-        case 3:
+            if (idx == -1) {
+                cout << "Account not found!\n";
+                continue;
+            }
+
+            cout << (choice == 2 ? "Enter Amount to Deposit: " : "Enter Amount to Withdraw: ");
+            cin >> amount;
+
+            bool success = (choice == 2) ? acc[idx].deposit(amount) : acc[idx].withdraw(amount);
+
+            if (success) {
+                cout << (choice == 2 ? "Amount Deposited Successfully!\n" : "Amount Withdrawn Successfully!\n");
+                cout << "New Balance: " << (long)(acc[idx].balance * 100 + 0.5) / 100.0 << endl;
+            } else {
+                cout << "Transaction failed! Check amount or minimum balance (500).\n";
+            }
+        }
+        else if (choice == 4) {
             cout << "Enter Account Number: ";
             cin >> no;
-            for (int i = 0; i < count; i++) {
-                if (acc[i].getAccNo() == no) {
-                    cout << "Enter Amount to Withdraw: ";
-                    cin >> amount;
-                    if (acc[i].withdraw(amount))
-                        cout << "Amount Withdrawn Successfully!\n";
-                    else
-                        cout << "Insufficient Balance!\n";
-                }
-            }
-            break;
+            int idx = findAccount(no);
 
-        case 4:
-            cout << "Enter Account Number: ";
-            cin >> no;
-            for (int i = 0; i < count; i++) {
-                if (acc[i].getAccNo() == no) {
-                    acc[i].display();
-                }
-            }
-            break;
-
-        case 5:
+            if (idx == -1) cout << "Account not found!\n";
+            else acc[idx].display();
+        }
+        else if (choice == 5) {
             cout << "Exiting... Thank You!\n";
-            break;
-
-        default:
+        }
+        else {
             cout << "Invalid Choice! Please try again.\n";
         }
 
